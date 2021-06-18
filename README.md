@@ -1,4 +1,4 @@
-# Docker for Predictive Clinical Neuroscience Toolkit (PCN)
+# Docker for Predictive Clinical Neuroscience Toolkit
 
 ## INTRODUCTION
 We created a docker for the Predictive Clinical Neuroscience software toolkit by Andre Marquand ([PCN github](https://github.com/amarquand/PCNtoolkit))
