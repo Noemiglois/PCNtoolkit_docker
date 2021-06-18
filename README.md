@@ -1,82 +1,41 @@
-# Predictive Clinical Neuroscience Toolkit
-Predictive Clinical Neuroscience software toolkit (formerly nispat). Methods for normative modelling, spatial statistics and pattern recognition. 
+# Docker for Predictive Clinical Neuroscience Toolkit (PCN)
 
-[![Gitter](https://badges.gitter.im/predictive-clinical-neuroscience/community.svg)](https://gitter.im/predictive-clinical-neuroscience/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Documentation Status](https://readthedocs.org/projects/pcntoolkit/badge/?version=latest)](https://pcntoolkit.readthedocs.io/en/latest/?badge=latest)
+## INTRODUCTION
+We created a docker for the Predictive Clinical Neuroscience software toolkit by Andre Marquand ([PCN github](https://github.com/amarquand/PCNtoolkit))
 
-## Basic installation (on a local machine)
+## INSTALATION
 
-i) install anaconda3 ii) create enviornment with "conda create --name <env_name>" iii) activate environment by "source activate <env_name>" iv) install required conda packages
+First you need to make sure docker is in your system. Otherwise install it from [docker.com](https://docs.docker.com/get-docker/)
+ 
 
-```
-conda install pip pandas scipy
-```
-
-v) install PCNtoolkit (plus dependencies)
+**i)** Type the following command on the terminal in order to download the latest image from the official **dockerhub** server:
 
 ```
-pip install pcntoolkit
+docker pull noemigl/pcntoolkit
 ```
 
-## Alternative installation (on a shared resource)
-Make sure conda is available on the system.
-Otherwise install it first from https://www.anaconda.com/ 
+**ii)** Build the image:
 
 ```
-conda --version
+docker build -t noemigl/pcntoolkit
 ```
 
-Create a conda environment in a shared location
+**iii)** Run a container with a link to the location of data in your local machine (-v argument). This data folder must contain files: covariates_allpatients.txt, covariates_HC.txt, features_allpatients.txt, features_HC.txt
 
 ```
-conda create -y python==3.7.7 numpy mkl blas --prefix=/shared/conda/<env_name>
+docker run -v /path/to/the/data/dir:/mnt/data -h master --privileged -it noemigl/pcntoolkit bash
 ```
 
-Activate the conda environment 
+## Once within the docker
 
+#### With CV
+Run the script "normative.py" with python, pointing to your data (mounted) with the arguments specifiying training covariates and training response variables. The -k argument specifies the partitions in cross validation.
 ```
-conda activate /shared/conda/<env_name>
-```
-
-Install other dependencies
-
-```
-conda install -y pandas scipy 
+/opt/conda/bin/python pcntoolkit/normative.py -c /mnt/data/covariates_HC.txt -k 3 /mnt/data/features_HC.txt
 ```
 
-Install pip dependencies
-
+#### Without CV
+The same as before but specifying as well the test filepaths. Here we won't use the -k argument (by default it is 1).
 ```
-pip --no-cache-dir install nibabel sklearn torch glob3 
+/opt/conda/bin/python pcntoolkit/normative.py -c /mnt/data/covariates_HC.txt -t /mnt/data/covariates_allpatients.txt -r /mnt/data/features_allpatients.txt /mnt/data/features_HC.txt
 ```
-
-Clone the repo
-
-```
-git clone https://github.com/amarquand/PCNtoolkit.git
-```
-
-install in the conda environment
-
-```
-cd PCNtoolkit/
-python3 setup.py install
-```
-
-Test 
-```
-python -c "import pcntoolkit as pk;print(pk.__file__)"
-```
-
-## Quickstart usage
-
-For normative modelling, functionality is handled by the normative.py script, which can be run from the command line, e.g.
-
-```
-# python normative.py -c /path/to/training/covariates -t /path/to/test/covariates -r /path/to/test/response/variables /path/to/my/training/response/variables
-```
-
-For more information, please see the following resources:
-
-* [documentation](https://github.com/amarquand/PCNtoolkit/wiki/Home)
-* [developer documentation](https://amarquand.github.io/PCNtoolkit/doc/build/html/)
-* a tutorial and worked through example on a [real-world dataset](https://github.com/predictive-clinical-neuroscience/PCNtoolkit-demo)
