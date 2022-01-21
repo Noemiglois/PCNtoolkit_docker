@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-
 REQUIRED_PACKAGES=['argparse', 'nibabel==3.2.1', 'six', 'sklearn==0.0', 'bspline==0.1.1',
       'matplotlib==3.4.2', 'pandas==1.2.4', 'torch==1.9.0',  'pymc3==3.8', 
       'Theano==1.0.5', 'arviz==0.11.0', 'brotlipy==0.7.0', 'cached-property==1.5.2',
@@ -11,7 +10,7 @@ REQUIRED_PACKAGES=['argparse', 'nibabel==3.2.1', 'six', 'sklearn==0.0', 'bspline
       'scipy==1.6.3', 'threadpoolctl==2.1.0', 'typing-extensions==3.10.0.0', 'xarray==0.18.2']
 
 setup(name='pcntoolkit',
-      version='0.19',
+      version='0.21',
       description='Predictive Clinical Neuroscience toolkit',
       url='http://github.com/amarquand/nispat',
       author='Andre Marquand',
@@ -20,3 +19,4 @@ setup(name='pcntoolkit',
       packages=find_packages(),
       install_requires=REQUIRED_PACKAGES,
       zip_safe=False)
+

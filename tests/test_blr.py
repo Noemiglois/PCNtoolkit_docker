@@ -1,13 +1,57 @@
 import sys
-sys.path.append('/home/preclineu/andmar/sfw/PCNtoolkit/pcntoolkit')
+#sys.path.append('/home/preclineu/andmar/sfw/PCNtoolkit/pcntoolkit')
+sys.path.append('/home/preclineu/chafra/Desktop/PCNtoolkit/')
+
 import numpy as np
 import scipy as sp
 from matplotlib import pyplot as plt
 import bspline
 from bspline import splinelab
-from bayesreg import BLR
-from gp import GPR
-from utils import WarpBoxCox, WarpAffine, WarpCompose, WarpSinArcsinh
+from pcntoolkit.model.bayesreg import BLR
+from pcntoolkit.model.gp import GPR
+from pcntoolkit.util.utils import WarpBoxCox, WarpAffine, WarpCompose, WarpSinArcsinh
+
+def create_noise(type_noise, N, parameters=None):
+    """Function to create different noise distributions"""
+    if type_noise == 'exp':
+        scale = parameters
+        n =  2*np.random.exponential(scale,N)
+    elif type_noise == 'gamma':
+        shape = parameters
+        n =  2*np.random.gamma(shape,scale = 2, size = N)
+    elif type_noise == 'skewed_right':
+        gaussian_rv = np.random.normal(0,1,N)
+        n = np.concatenate((2.5*gaussian_rv[gaussian_rv>0], np.random.normal(0,1,np.abs(N-len(gaussian_rv[gaussian_rv>0])))))
+    elif type_noise == 'skewed_left':
+        gaussian_rv = np.random.normal(0,1,N)
+        n = np.concatenate((2.5*gaussian_rv[gaussian_rv<0], np.random.normal(0,1,np.abs(N-len(gaussian_rv[gaussian_rv<0])))))
+    elif type_noise == 'heavy_tailed':
+        n = np.concatenate((np.random.normal(0,1,int(N/2))*2.5, np.random.normal(0,1,int(N/2))))
+    elif type_noise == 'light_tailed':
+        n = np.random.normal(0,0.6,N)
+    elif type_noise == 'gaussian':
+        mu = 0
+        sigma = parameters
+        n = np.random.normal(mu,sigma,N)
+    elif type_noise == 'bimodal':
+        N = int(N/2)
+        x1 = 2*np.random.normal(-1,0.25,N) 
+        x2 = np.random.normal(1,0.25,N)
+        n = np.concatenate([x1, x2])
+    elif type_noise == 'skewed_bimodal':
+        N = int(N/2)
+        x1 = 2*np.random.normal(-1,0.25,N) 
+        x2 = np.random.normal(1,0.25,N)
+        gaussian_rv = np.random.normal(0,1,N)
+        x2 = np.concatenate((10*gaussian_rv[gaussian_rv>0], np.random.normal(0,1,np.abs(N-len(gaussian_rv[gaussian_rv>0])))))
+        n = np.concatenate([x1, x2])
+    elif type_noise == 'tdist':
+        dof = parameters
+        n = np.random.standard_t(dof, N)    
+    plt.figure()
+    plt.hist(n, bins=50)
+    plt.title('Noise distribution')
+    return n
 
 print('First do a simple evaluation of B-splines regression...')
 
@@ -32,7 +76,15 @@ for d in range(1,dimpoly+1):
 # generative model
 b = [0.5, -0.1, 0.005]  # true regression coefficients
 s2 = 0.05               # noise variance
-y = Phip.dot(b) + np.random.normal(0,s2,N)
+# y = Phip.dot(b) + create_noise('gaussian', N, s2)
+y = Phip.dot(b) + create_noise('exp', N, 2)
+# y = Phip.dot(b) + create_noise('skewed_right', N)
+# y = Phip.dot(b) + create_noise('skewed_left', N)
+# y = Phip.dot(b) + create_noise('heavy_tailed', N)
+# y = Phip.dot(b) + create_noise('light_tailed', N)
+# y = Phip.dot(b) + create_noise('bimodal', N)
+# y = Phip.dot(b) + create_noise('skewed_bimodal', N)
+# y = Phip.dot(b) + create_noise('tdist', N, 3)
 
 # cubic B-spline basis (used for regression)
 p = 3       # order of spline (3 = cubic)
@@ -45,10 +97,12 @@ Phis = np.array([B(i) for i in Xs])
 
 hyp0 = np.zeros(2)
 #hyp0 = np.zeros(4) # use ARD
-B = BLR(hyp0, Phi, y)
+#B = BLR(hyp0, Phi, y)
+B = BLR()
 hyp = B.estimate(hyp0, Phi, y, optimizer='powell')
 
 yhat,s2 = B.predict(hyp, Phi, y, Phis)
+plt.figure()
 plt.fill_between(Xs, yhat-1.96*np.sqrt(s2), yhat+1.96*np.sqrt(s2), alpha = 0.2)
 plt.scatter(X,y)
 plt.plot(Xs,yhat)
@@ -60,9 +114,9 @@ print(B.m)
 
 print('demonstrate likelihood warping ...' )
 # generative model
-b = [0.4, -0.01, 0.]  # true regression coefficients
-s2 = 0.1              # noise variance
-y = Phip.dot(b) + 2*np.random.exponential(1,N)
+#b = [0.4, -0.01, 0.]  # true regression coefficients
+#s2 = 0.1              # noise variance
+# y = Phip.dot(b) + 2*np.random.exponential(1,N)
 plt.scatter(X,y)
 
 W = WarpBoxCox()
@@ -71,10 +125,13 @@ W = WarpBoxCox()
 Phix = X[:, np.newaxis]
 Phixs = Xs[:, np.newaxis]
 
+Bw = BLR(warp=W)
+#hyp0 = 0.1*np.ones(2+W.get_n_params())
+#hyp = Bw.estimate(hyp0, Phi, y, optimizer='powell')
+#yhat, s2 = Bw.predict(hyp, Phi, y, Phis)
 hyp0 = 0.1*np.ones(2+W.get_n_params())
-Bw = BLR(hyp0, Phi, y, warp=W)
-hyp = Bw.estimate(hyp0, Phi, y, optimizer='powell')
-yhat, s2 = Bw.predict(hyp, Phi, y, Phis)
+hyp = Bw.estimate(hyp0, Phi, y, optimizer='powell', var_covariates=Phix)
+yhat, s2 = Bw.predict(hyp, Phi, y, Phis, var_covariates_test=Phixs)
 
 warp_param = hyp[1:W.get_n_params()+1] 
 med, pr_int = W.warp_predictions(yhat, s2, warp_param)
@@ -95,7 +152,31 @@ plt.plot(xx,W.invf(xx,warp_param))
 plt.title('estimated warping function')
 plt.show()
 
-print("Estimate a model with heteroskedastic noise ...")
+# estimate a model with heteroskedastic noise
+print('demonstrate heteroskedastic noise...' )
+# generative model
+b = [0.4, -0.01, 0.]  # true regression coefficients
+s2 = 0.1              # noise variance
+y = Phip.dot(b) + Phip[:,0]*np.random.normal(size=N)
+plt.scatter(X,y)
+
+# new version
+Bh = BLR()
+hyp0 = np.zeros(8)
+hyp = Bh.estimate(hyp0, Phi, y, optimizer='l-bfgs-b', var_covariates=Phi, verbose=True)
+yhat,s2 = Bh.predict(hyp, Phi, y, Phis, var_covariates_test=Phis)
+
+# old version
+#Bh = BLR(hetero_noise=7)
+#hyp0 = np.zeros(8)
+#hyp = Bh.estimate(hyp0, Phi, y, optimizer='l-bfgs-b', hetero_noise=7, verbose=True)
+#yhat,s2 = Bh.predict(hyp, Phi, y, Phis)
+
+print(hyp)
+plt.fill_between(Xs, yhat-1.96*np.sqrt(s2), yhat+1.96*np.sqrt(s2), alpha = 0.2)
+plt.show()
+
+print("Estimate a model with site-specific noise ...")
 # set up some indicator variables for the variance groups
 n_site = 3
 idx = []
@@ -137,7 +218,7 @@ for s in range(n_site):
     Phis = np.concatenate((Phis, site_te), axis=1)
 
 hyp0=np.zeros(4)
-Bh = BLR(hyp0, Phi, y, var_groups=sids)
+Bh = BLR(var_groups=sids)
 Bh.loglik(hyp0, Phi, y)
 Bh.dloglik(hyp0, Phi, y)
 hyp = Bh.estimate(hyp0, Phi, y)
@@ -148,7 +229,7 @@ for s in range(n_site):
     plt.scatter(X[idx[s]], y[idx[s]])
     plt.plot(Xs[idx_te[s]],yhat[idx_te[s]], color=cols[s])
     plt.fill_between(Xs[idx_te[s]], 
-                     yhat[idx_te[s]] - 1.96 * np.sqrt(s2[idx_te[s]]), 
-                     yhat[idx_te[s]] + 1.96 * np.sqrt(s2[idx_te[s]]),
-                     alpha=0.2, color=cols[s])
+                      yhat[idx_te[s]] - 1.96 * np.sqrt(s2[idx_te[s]]), 
+                      yhat[idx_te[s]] + 1.96 * np.sqrt(s2[idx_te[s]]),
+                      alpha=0.2, color=cols[s])
 plt.show()
