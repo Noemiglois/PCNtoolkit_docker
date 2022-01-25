@@ -11,19 +11,19 @@ First you need to make sure docker is in your system. Otherwise install it from 
 **i)** Type the following command on the terminal in order to download the latest image from the official **dockerhub** server:
 
 ```
-docker pull noemigl/pcntoolkit:v0.19
+docker pull noemigl/pcntoolkit:v0.21
 ```
 
 **ii)** Build the image:
 
 ```
-docker build -t noemigl/pcntoolkit:v0.19
+docker build -t noemigl/pcntoolkit:v0.21
 ```
 
 **iii)** Run a container with a link to the location of data in your local machine (-v argument). This data folder must contain files: covariates_allpatients.txt, covariates_HC.txt, features_allpatients.txt, features_HC.txt
 
 ```
-docker run -v /path/to/the/data/dir:/mnt/data -h master --privileged -it noemigl/pcntoolkit:v0.19 bash
+docker run -v /path/to/the/data/dir:/mnt/data -h master --privileged -it noemigl/pcntoolkit:v0.21 bash
 ```
 
 ## Once within the docker
